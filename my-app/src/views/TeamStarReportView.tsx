@@ -12,8 +12,16 @@ const TeamStarsReportView: React.FC = () => {
     const [teamId, setTeamId] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [csvTable, setCsvTable] = useState<string[][]>([]);
 
     const location = useLocation();
+
+    const parseCsv = (csv: string): string[][] => {
+        return csv
+            .trim()
+            .split('\n')
+            .map(row => row.split(',').map(cell => cell.trim()));
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,6 +76,8 @@ const TeamStarsReportView: React.FC = () => {
             }
             const data = await response.text();
             console.log(data); // Log the data for debugging
+            const parsedCsv = parseCsv(data);
+            setCsvTable(parsedCsv);
         } catch (error: any) {
             console.error('Error fetching team stars:', error);
             alert(`Error fetching team stars: ${error.message}`);
@@ -102,6 +112,26 @@ const TeamStarsReportView: React.FC = () => {
             <button onClick={handleSend}>
                 Send
             </button>
+            { csvTable.length > 0 && (
+                <table border={1} cellPadding="5">
+                    <thead>
+                        <tr>
+                            {csvTable[0].map((header, idx) => (
+                                <th key={idx}>{header}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {csvTable.slice(1).map((row, rIdx) => (
+                            <tr key={rIdx}>
+                                {row.map((cell, cIdx) => (
+                                    <td key={cIdx}>{cell}</td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
         </div>
     );
 }
