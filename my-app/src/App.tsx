@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import StarAssignmentView from './views/StarAssignmentView';
-import BallCollectionView from './views/BallCollectionView';
+import TeamStarReportView from './views/TeamStarReportView';
 import './App.css';
 
 const App: React.FC = () => {
@@ -13,7 +13,7 @@ const App: React.FC = () => {
           <Route path="/star-assignment" element={<StarAssignmentView />} />
           
           {/* Route for View 2: Ball Collection Report */}
-          <Route path="/ball-collection-report/:team_id" element={<BallCollectionView />} />
+          <Route path="/team-star-report/" element={<TeamStarReportView />} />
         </Routes>
       </div>
     </Router>

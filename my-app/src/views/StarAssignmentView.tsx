@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // API base URLs
-// const TEAM_MEMBERS_API = 'https://team-members-service-237455253851.us-central1.run.app';
-// const STAR_TRACKING_API = 'https://star-tracking-service-237455253851.us-central1.run.app';
 const TEAM_MEMBERS_API = 'http://192.168.100.21:8000'
 const STAR_TRACKING_API = 'http://192.168.100.21:8002'
 
@@ -28,6 +26,7 @@ const StarAssignmentView: React.FC = () => {
     const [checkedState, setCheckedState] = useState<{ [key: string]: boolean }>({});
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [session, setSession] = useState<StarSession | null>(null);
 
     const location = useLocation();
 
@@ -53,7 +52,8 @@ const StarAssignmentView: React.FC = () => {
                 if (!session) {
                     throw new Error(`Star Session with ID ${starSessionId} not found.`);
                 }
-                
+
+                setSession(session);
                 setSessionName(session.name);
                 const teamId = session.team_id;
 
@@ -87,16 +87,67 @@ const StarAssignmentView: React.FC = () => {
         }));
     };
 
-    const handleSubmit = () => {
-        const result = Object.keys(checkedState).map(memberId => ({
-            team_member_id: memberId,
-            selected: checkedState[memberId]
-        }));
-        
-        console.log("Submitting selection:");
-        console.log(JSON.stringify(result, null, 2));
-        alert("Selection has been logged to the console.");
+    const handleSubmit = async () => {
+        // Validate session date
+        if (!session) {
+            alert("Session data is not available.");
+            return;
+        }
+        const sessionDate = new Date(session.session_date); // session must be available in state
+        const today = new Date();
+        const oneDayAgo = new Date(today);
+        oneDayAgo.setDate(today.getDate() - 1);
+
+        if (sessionDate < oneDayAgo) {
+            alert("It's too late to assign stars for this session.");
+            return;
+        }
+
+        // Prepare assignments dictionary
+        const assignments: { [key: string]: boolean } = {};
+        Object.keys(checkedState).forEach(memberId => {
+            assignments[memberId] = checkedState[memberId];
+        });
+
+        // Validate assignments
+        if (Object.keys(assignments).length === 0) {
+            alert("No team members selected.");
+            return;
+        }
+
+        // Prepare payload
+        const payload = {
+            star_session_id: session.id,
+            assignments: assignments
+        };
+
+        try {
+            const response = await fetch(`${STAR_TRACKING_API}/v1/star-assignments/batch-create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to register star assignments.');
+            }
+
+            alert("Star assignments registered successfully!");
+        } catch (err: any) {
+            alert(`Error: ${err.message}`);
+        }
     };
+
+    // const handleSubmit = () => {
+    //     const result = Object.keys(checkedState).map(memberId => ({
+    //         team_member_id: memberId,
+    //         selected: checkedState[memberId]
+    //     }));
+        
+    //     console.log("Submitting selection:");
+    //     console.log(JSON.stringify(result, null, 2));
+    //     alert("Selection has been logged to the console.");
+    // };
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div style={{ color: 'red' }}>Error: {error}</div>;
