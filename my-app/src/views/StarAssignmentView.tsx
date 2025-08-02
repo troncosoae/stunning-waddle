@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // API base URLs
-const TEAM_MEMBERS_API = 'http://192.168.100.21:8000'
-const STAR_TRACKING_API = 'http://192.168.100.21:8002'
+const TEAM_MEMBERS_API = process.env.REACT_APP_TEAM_MEMBERS_API || '';
+const STAR_TRACKING_API = process.env.REACT_APP_STAR_TRACKING_API || '';
 
 // Define interfaces for our data models based on the Python code
 interface TeamMember {
@@ -33,6 +33,10 @@ const StarAssignmentView: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                if (TEAM_MEMBERS_API === '' || STAR_TRACKING_API === '') {
+                    throw new Error("API base URLs are not defined.");
+                }
+
                 const queryParams = new URLSearchParams(location.search);
                 const starSessionId = queryParams.get('star_session_id');
 
@@ -118,7 +122,8 @@ const StarAssignmentView: React.FC = () => {
         // Prepare payload
         const payload = {
             star_session_id: session.id,
-            assignments: assignments
+            assignments: assignments,
+            disable_double_assignments: true
         };
 
         try {

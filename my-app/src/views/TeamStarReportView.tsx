@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 // API base URLs
-const TEAM_MEMBERS_API = 'http://192.168.100.21:8000'
-const STAR_TRACKING_API = 'http://192.168.100.21:8002'
+const STAR_TRACKING_API = process.env.REACT_APP_STAR_TRACKING_API || '';
 
 const TeamStarsReportView: React.FC = () => {
     // Type the params from the URL
@@ -13,6 +12,7 @@ const TeamStarsReportView: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [csvTable, setCsvTable] = useState<string[][]>([]);
+    const [csvLink, setCsvLink] = useState<string>('');
 
     const location = useLocation();
 
@@ -26,6 +26,10 @@ const TeamStarsReportView: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                if (STAR_TRACKING_API === '') {
+                    throw new Error("STAR_TRACKING_API is not defined.");
+                }
+
                 const queryParams = new URLSearchParams(location.search);
                 const teamIdFromUrl = queryParams.get('team_id');
 
@@ -78,6 +82,7 @@ const TeamStarsReportView: React.FC = () => {
             console.log(data); // Log the data for debugging
             const parsedCsv = parseCsv(data);
             setCsvTable(parsedCsv);
+            setCsvLink(TEAM_REQ_URL); // Set the link for downloading CSV
         } catch (error: any) {
             console.error('Error fetching team stars:', error);
             alert(`Error fetching team stars: ${error.message}`);
@@ -113,24 +118,36 @@ const TeamStarsReportView: React.FC = () => {
                 Send
             </button>
             { csvTable.length > 0 && (
-                <table border={1} cellPadding="5">
-                    <thead>
-                        <tr>
-                            {csvTable[0].map((header, idx) => (
-                                <th key={idx}>{header}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {csvTable.slice(1).map((row, rIdx) => (
-                            <tr key={rIdx}>
-                                {row.map((cell, cIdx) => (
-                                    <td key={cIdx}>{cell}</td>
+                <>
+                    {/* Message to show the table is copyable */}
+                    <div style={{ marginTop: '20px' }}>
+                        <p>Table is copyable. You can select and copy the content.</p>
+                    </div>
+                    <table border={1} cellPadding="5">
+                        <thead>
+                            <tr>
+                                {csvTable[0].map((header, idx) => (
+                                    <th key={idx}>{header}</th>
                                 ))}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {csvTable.slice(1).map((row, rIdx) => (
+                                <tr key={rIdx}>
+                                    {row.map((cell, cIdx) => (
+                                        <td key={cIdx}>{cell}</td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {/* Link to download CSV */}
+                    <div style={{ marginTop: '20px' }}>
+                        <a href={csvLink} download="team_stars_report.csv">
+                            Download CSV
+                        </a>
+                    </div>
+                </>
             )}
         </div>
     );
